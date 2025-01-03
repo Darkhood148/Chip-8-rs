@@ -227,6 +227,85 @@ impl Emu {
                 let rng: u8 = rand::thread_rng().gen();
                 self.v[x as usize] = rng & nn;
             }
+            (0xD, _, _, _) => {
+                // Get the (x, y) coords for our sprite
+                let x_coord = self.v[d2 as usize] as u16;
+                let y_coord = self.v[d3 as usize] as u16;
+                // The last digit determines how many rows high our sprite is
+                let num_rows = d4;
+
+                // Keep track if any pixels were flipped
+                let mut flipped = false;
+                // Iterate over each row of our sprite
+                for y_line in 0..num_rows {
+                    // Determine which memory address our row's data is stored
+                    let addr = self.i + y_line as u16;
+                    let pixels = self.ram[addr as usize];
+                    // Iterate over each column in our row
+                    for x_line in 0..8 {
+                        // Use a mask to fetch current pixel's bit. Only flip if a 1
+                        if (pixels & (0b1000_0000 >> x_line)) != 0 {
+                            // Sprites should wrap around screen, so apply modulo
+                            let x = (x_coord + x_line) as usize % SCREEN_WIDTH;
+                            let y = (y_coord + y_line) as usize % SCREEN_HEIGHT;
+
+                            // Get our pixel's index in the 1D screen array
+                            let idx = x + SCREEN_WIDTH * y;
+                            // Check if we're about to flip the pixel and set
+                            flipped |= self.screen[idx];
+                            self.screen[idx] ^= true;
+                        }
+                    }
+                }
+                // Populate VF register
+                if flipped {
+                    self.v[0xF] = 1;
+                } else {
+                    self.v[0xF] = 0;
+                }
+            }
+            (0xE, _, 0x9, 0xE) => {
+                let x = d2 as u8;
+                if self.keys[self.v[x as usize] as usize] {
+                    self.pc += 2;
+                }
+            }
+            (0xE, _, 0xA, 0x1) => {
+                let x = d2 as u8;
+                if !self.keys[self.v[x as usize] as usize] {
+                    self.pc += 2;
+                }
+            }
+            (0xF, _, 0x0, 0x7) => {
+                let x = d2 as u8;
+                self.v[x as usize] = self.dt;
+            }
+            (0xF, _, 0x0, 0xA) => {
+                let x = d2 as u8;
+                let mut key_pressed = false;
+                for (i, key) in self.keys.iter().enumerate() {
+                    if *key {
+                        self.v[x as usize] = i as u8;
+                        key_pressed = true;
+                        break;
+                    }
+                }
+                if !key_pressed {
+                    self.pc -= 2;
+                }
+            }
+            (0xF, _, 0x1, 0x5) => {
+                let x = d2 as u8;
+                self.dt = self.v[x as usize];
+            }
+            (0xF, _, 0x1, 0x8) => {
+                let x = d2 as u8;
+                self.st = self.v[x as usize];
+            }
+            (0xF, _, 0x1, 0xE) => {
+                let x = d2 as u8;
+                self.i += self.v[x as usize] as u16;
+            }
             _ => println!("Unknown opcode: {:#04x}", opcode),
         }
     }
