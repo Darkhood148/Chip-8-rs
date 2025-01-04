@@ -81,11 +81,37 @@ impl Emu {
         let op = self.fetch();
     }
 
+    pub fn load(&mut self, data: &[u8]) {
+        let start = START_ADDRESS as usize;
+        let end = (START_ADDRESS as usize) + data.len();
+        self.ram[start..end].copy_from_slice(data);
+    }
+
     fn fetch(&mut self) -> u16 {
         let higher_byte = self.ram[self.pc as usize] as u16;
         let lower_byte = self.ram[(self.pc + 1) as usize] as u16;
         self.pc += 2;
         higher_byte << 8 | lower_byte
+    }
+    pub fn get_display(&self) -> &[bool] {
+        &self.screen
+    }
+
+    pub fn keypress(&mut self, idx: usize, pressed: bool) {
+        self.keys[idx] = pressed;
+    }
+
+    pub fn tick_timers(&mut self) {
+        if self.dt > 0 {
+            self.dt -= 1;
+        }
+
+        if self.st > 0 {
+            if self.st == 1 {
+                // BEEP
+            }
+            self.st -= 1;
+        }
     }
 }
 
