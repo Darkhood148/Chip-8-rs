@@ -28,7 +28,7 @@ const FONTSET: [u8; FONTSET_SIZE] = [
     0xF0, 0x80, 0xF0, 0x80, 0x80, // F
 ];
 
-struct Emu {
+pub struct Emu {
     ram: [u8; RAM_SIZE],
     v: [u8; NUM_REGISTERS],
     pc: u16,
@@ -44,7 +44,7 @@ struct Emu {
 
 // Basic Stuff
 impl Emu {
-    fn new() -> Self {
+    pub fn new() -> Self {
         let mut new_emu = Self {
             ram: [0; RAM_SIZE],
             v: [0; NUM_REGISTERS],
@@ -79,6 +79,7 @@ impl Emu {
 
     pub fn tick(&mut self) {
         let op = self.fetch();
+        self.execute(op);
     }
 
     pub fn load(&mut self, data: &[u8]) {
@@ -208,7 +209,7 @@ impl Emu {
                         let (new_vx, carry) =
                             self.v[x as usize].overflowing_sub(self.v[y as usize]);
                         self.v[x as usize] = new_vx;
-                        let new_vf = if carry { 1 } else { 0 };
+                        let new_vf = if carry { 0 } else { 1 };
                         self.v[0xF] = new_vf;
                     }
                     // Set Vx = Vx >> 1
@@ -222,7 +223,7 @@ impl Emu {
                         let (new_vx, carry) =
                             self.v[y as usize].overflowing_sub(self.v[x as usize]);
                         self.v[x as usize] = new_vx;
-                        let new_vf = if carry { 1 } else { 0 };
+                        let new_vf = if carry { 0 } else { 1 };
                         self.v[0xF] = new_vf;
                     }
                     // Set Vx = Vx << 1
