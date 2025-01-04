@@ -306,6 +306,29 @@ impl Emu {
                 let x = d2 as u8;
                 self.i += self.v[x as usize] as u16;
             }
+            (0xF, _, 2, 9) => {
+                let x = d2 as u8;
+                let c = self.v[x as usize] as u16;
+                self.i = c * 5;
+            }
+            (0xF, _, 0x3, 0x3) => {
+                let x = d2 as u8;
+                self.ram[self.i as usize] = self.v[x as usize] / 100;
+                self.ram[(self.i + 1) as usize] = (self.v[x as usize] / 10) % 10;
+                self.ram[(self.i + 2) as usize] = self.v[x as usize] % 10;
+            }
+            (0xF, _, 0x5, 0x5) => {
+                let x = d2 as u8;
+                for i in 0..=x {
+                    self.ram[self.i as usize + i as usize] = self.v[i as usize];
+                }
+            }
+            (0xF, _, 0x6, 0x5) => {
+                let x = d2 as u8;
+                for i in 0..=x {
+                    self.v[i as usize] = self.ram[self.i as usize + i as usize];
+                }
+            }
             _ => println!("Unknown opcode: {:#04x}", opcode),
         }
     }
